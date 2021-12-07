@@ -1,11 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
-
-
-# Create your models here.
-class Info(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone = models.CharField
+from site_auth.models import User
 
 
 class Category(models.Model):
@@ -17,7 +11,8 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=200, null=True)
-    price = models.IntegerField()
+    description = models.TextField(max_length=300, null=True)
+    price = models.IntegerField(null=True)
     category = models.ManyToManyField(Category, related_name='products')
 
     def __str__(self):
@@ -38,6 +33,16 @@ class Order(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     suborders = models.ManyToManyField(SubOrder)
+    accepted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return f'order {self.id}'
+
+
+class Banner(models.Model):
+    name = models.CharField(max_length=200, null=True, blank=True)
+    photo = models.ImageField(upload_to='images')
+
+    def __str__(self):
+        return self.name if self.name else f'banner {self.id}'
