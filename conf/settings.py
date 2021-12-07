@@ -132,4 +132,4 @@ MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'site_auth.User'
-django_heroku.settings(locals())
+django_on_heroku.settings(locals())
