@@ -14,7 +14,6 @@ class Product(models.Model):
     description = models.TextField(max_length=300, null=True)
     price = models.IntegerField(null=True)
     category = models.ManyToManyField(Category, related_name='products')
-    date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
