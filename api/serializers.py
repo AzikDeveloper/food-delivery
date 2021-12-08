@@ -10,7 +10,7 @@ class CategorySerializer(ModelSerializer):
 
 
 class ProductSerializer(ModelSerializer):
-    category = CategorySerializer(many=True)
+    category = CategorySerializer()
 
     class Meta:
         model = Product

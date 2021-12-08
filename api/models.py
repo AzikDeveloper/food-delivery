@@ -13,7 +13,7 @@ class Product(models.Model):
     name = models.CharField(max_length=200, null=True)
     description = models.TextField(max_length=300, null=True)
     price = models.IntegerField(null=True)
-    category = models.ManyToManyField(Category, related_name='products')
+    category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return self.name
