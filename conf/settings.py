@@ -15,6 +15,8 @@ import os
 import django_on_heroku
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import storages.backends.s3boto3
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
@@ -40,7 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'site_auth.apps.SiteAuthConfig',
-    'api.apps.ApiConfig'
+    'api.apps.ApiConfig',
+    'storages'
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -127,9 +130,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
-MEDIA_URL = '/media/'
+
+AWS_ACCESS_KEY_ID = 'AKIAS4ICQJ4MG7G4N4UU'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'delivery-azikdev-files'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+
+AWS_S3_REGION_NAME = 'us-east-2'
+AWS_S3_ADDRESSING_STYLE = "virtual"
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

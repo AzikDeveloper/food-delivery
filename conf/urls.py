@@ -16,5 +16,3 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('auth/', include('site_auth.urls'))
 ]
-
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
