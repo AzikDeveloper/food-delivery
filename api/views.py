@@ -3,18 +3,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from .models import Product, Order, Category, Banner
-from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer
+from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer, UserSerializer
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist, FieldError
 from math import ceil
-
-from django.contrib.contenttypes.models import ContentType
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def homeView(request):
-    ContentType.objects.all().delete()
     return Response({'ok': True})
 
 
@@ -109,3 +106,13 @@ def productsByCategoryView(request, cat_id):
     products_in_category = category.products.all()
     product_serializer = ProductSerializer(products_in_category, many=True)
     return Response(data=product_serializer.data)
+
+
+@api_view(['POST'])
+def createUserView(request):
+    user_serializer = UserSerializer(data=request.data)
+    if user_serializer.is_valid():
+        user_serializer.save()
+        return Response(status=200)
+    else:
+        return Response(status=400)
