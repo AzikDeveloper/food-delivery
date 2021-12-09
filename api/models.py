@@ -46,3 +46,15 @@ class Banner(models.Model):
 
     def __str__(self):
         return self.name if self.name else f'banner {self.id}'
+
+
+class Filial(models.Model):
+    name = models.CharField(max_length=200, null=True)
+    address = models.CharField(max_length=200, null=True)
+    open_times = models.CharField(max_length=200, null=True)
+    phone_number = models.CharField(max_length=20, null=True)
+    orienter = models.CharField(max_length=200, null=True)
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.name
