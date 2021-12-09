@@ -11,6 +11,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=200, null=True)
+    photo = models.ImageField(upload_to='products', null=True)
     description = models.TextField(max_length=300, null=True)
     price = models.IntegerField(null=True)
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE, null=True)
@@ -42,7 +43,7 @@ class Order(models.Model):
 
 class Banner(models.Model):
     name = models.CharField(max_length=200, null=True, blank=True)
-    photo = models.ImageField(upload_to='images')
+    photo = models.ImageField(upload_to='banners')
 
     def __str__(self):
         return self.name if self.name else f'banner {self.id}'

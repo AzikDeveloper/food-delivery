@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
-from .models import Product, Category, Order, SubOrder, Banner
+from .models import Product, Category, Order, SubOrder, Banner, Filial, Location
 from site_auth.models import User
 
 
@@ -14,8 +14,8 @@ class ProductSerializer(ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'price', 'category']
-        ordering_fields = ['id', 'name', 'price', 'category']
+        fields = ['id', 'name', 'photo', 'description', 'price', 'category']
+        ordering_fields = ['id', 'name', 'photo', 'description', 'price', 'category']
 
 
 class UserSerializer(ModelSerializer):
@@ -49,3 +49,23 @@ class BannerSerializer(ModelSerializer):
     class Meta:
         model = Banner
         fields = ['id', 'name', 'photo']
+
+
+class LocationSerializer(ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['latitude', 'longitude']
+
+
+class FilialSerializer(ModelSerializer):
+    location = LocationSerializer()
+
+    class Meta:
+        model = Filial
+        fields = '__all__'
+
+    def create(self, validated_data):
+        location = Location.objects.create(**validated_data.get('location'))
+        validated_data['location'] = location
+        filial = Filial.objects.create(**validated_data)
+        return filial

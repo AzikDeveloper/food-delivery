@@ -2,8 +2,10 @@ from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import Product, Order, Category, Banner
-from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer, UserSerializer
+from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer, UserSerializer, \
+    FilialSerializer
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist, FieldError
 from math import ceil
@@ -116,3 +118,23 @@ def createUserView(request):
         return Response(status=200)
     else:
         return Response(status=400)
+
+
+class FilialView(APIView):
+    permission_classes = ()
+    authentication_classes = []
+
+    def post(self, request):
+        filial_serializer = FilialSerializer(data=request.data)
+        if filial_serializer.is_valid():
+            filial_serializer.save()
+            return Response(data=filial_serializer.data, status=200)
+        else:
+            return Response(data={
+                'detail': 'Failed to create filial'
+            }, status=400)
+
+    def get(self, request):
+        filials = Filial.objects.all()
+        filial_serializer = FilialSerializer(filials)
+        return Response(data=filial_serializer.data)
