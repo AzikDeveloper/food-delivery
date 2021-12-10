@@ -1,6 +1,8 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
-from .models import Product, Category, Order, SubOrder, Banner, Filial, Location
+from .models import Product, Category, Order, SubOrder, Banner, Filial, Address, About, Contact
 from site_auth.models import User
+from django.core.exceptions import BadRequest
+from django.contrib.auth import password_validation
 
 
 class CategorySerializer(ModelSerializer):
@@ -15,13 +17,13 @@ class ProductSerializer(ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'photo', 'description', 'price', 'category']
-        ordering_fields = ['id', 'name', 'photo', 'description', 'price', 'category']
 
 
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'phone']
+        fields = ['id', 'username', 'password', 'phone_number']
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -42,7 +44,7 @@ class OrderSerializer(ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'receiver', 'location', 'suborders', 'accepted', 'date_created']
+        fields = ['id', 'receiver', 'address', 'suborders', 'accepted', 'date_created']
 
 
 class BannerSerializer(ModelSerializer):
@@ -51,21 +53,47 @@ class BannerSerializer(ModelSerializer):
         fields = ['id', 'name', 'photo']
 
 
-class LocationSerializer(ModelSerializer):
+class AddressSerializer(ModelSerializer):
     class Meta:
-        model = Location
-        fields = ['latitude', 'longitude']
+        model = Address
+        fields = ['home_number', 'street', 'district', 'lat', 'long']
 
 
 class FilialSerializer(ModelSerializer):
-    location = LocationSerializer()
+    address = AddressSerializer()
 
     class Meta:
         model = Filial
-        fields = '__all__'
+        fields = ['id', 'name', 'open_times', 'phone_number', 'address', 'orienter']
 
     def create(self, validated_data):
-        location = Location.objects.create(**validated_data.get('location'))
-        validated_data['location'] = location
+        address = Address.objects.create(**validated_data.get('address'))
+        validated_data['address'] = address
         filial = Filial.objects.create(**validated_data)
         return filial
+
+    def update(self, instance: Filial, validated_data):
+        if 'address' in validated_data:
+            address = instance.address
+            serializer = AddressSerializer(instance=address, data=validated_data.get('address'), partial=True)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise BadRequest
+            validated_data.pop('address')
+        for attr, val in validated_data.items():
+            setattr(instance, attr, val)
+        instance.save()
+        return instance
+
+
+class AboutSerializer(ModelSerializer):
+    class Meta:
+        model = About
+        fields = ['id', 'title', 'banner', 'context']
+
+
+class ContactSerializer(ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ['id', 'title', 'address']

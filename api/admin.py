@@ -5,8 +5,10 @@ from .models import *
 
 admin.site.register(Category)
 admin.site.register(Product)
-admin.site.register(Location)
+admin.site.register(Address)
 admin.site.register(Order)
 admin.site.register(SubOrder)
 admin.site.register(Banner)
 admin.site.register(Filial)
+admin.site.register(About)
+admin.site.register(Contact)

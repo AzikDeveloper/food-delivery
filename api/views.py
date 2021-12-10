@@ -1,13 +1,17 @@
 from rest_framework.decorators import api_view
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Product, Order, Category, Banner
+from rest_framework import status
+from .models import Product, Order, Category, Banner, Filial, About, Contact
+from site_auth.models import User
 from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer, UserSerializer, \
-    FilialSerializer
+    FilialSerializer, AboutSerializer, ContactSerializer
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist, FieldError
+from django.shortcuts import get_object_or_404
 from math import ceil
 
 
@@ -110,31 +114,103 @@ def productsByCategoryView(request, cat_id):
     return Response(data=product_serializer.data)
 
 
-@api_view(['POST'])
-def createUserView(request):
-    user_serializer = UserSerializer(data=request.data)
-    if user_serializer.is_valid():
-        user_serializer.save()
-        return Response(status=200)
-    else:
-        return Response(status=400)
-
-
-class FilialView(APIView):
-    permission_classes = ()
-    authentication_classes = []
+class FilialsView(APIView):
+    def get(self, request):
+        filials = Filial.objects.all()
+        serializer = FilialSerializer(filials, many=True)
+        return Response(data=serializer.data)
 
     def post(self, request):
-        filial_serializer = FilialSerializer(data=request.data)
-        if filial_serializer.is_valid():
-            filial_serializer.save()
-            return Response(data=filial_serializer.data, status=200)
+        serializer = FilialSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data)
         else:
             return Response(data={
                 'detail': 'Failed to create filial'
             }, status=400)
 
+    def delete(self, request):
+        Filial.objects.all().delete()
+        return Response(data={
+            'detail': 'Filials are deleted'
+        })
+
+
+class FilialView(APIView):
+    def get(self, request, filial_id):
+        filial = get_object_or_404(Filial, id=filial_id)
+        serializer = FilialSerializer(filial)
+        return Response(serializer.data)
+
+    def put(self, request, filial_id):
+        filial = get_object_or_404(Filial, id=filial_id)
+        serializer = FilialSerializer(instance=filial, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data)
+        else:
+            return Response(data={
+                'detail': 'Failed to update the filial!'
+            }, status=400)
+
+
+class UsersView(APIView):
     def get(self, request):
-        filials = Filial.objects.all()
-        filial_serializer = FilialSerializer(filials)
-        return Response(data=filial_serializer.data)
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data)
+        else:
+            return Response(data=serializer.data)
+
+
+class UserView(APIView):
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    def put(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        serializer = UserSerializer(instance=user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            print(serializer.errors)
+            return Response(data={
+                'detail': 'Failed to update user'
+            }, status=400)
+
+    def delete(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        user.delete()
+        return Response()
+
+
+class UsersMeView(APIView):
+    authentication_classes = [TokenAuthentication]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+
+class AboutView(APIView):
+    def get(self, request):
+        about = About.objects.first()
+        serializer = AboutSerializer(about)
+        return Response(data=serializer.data)
+
+
+class ContactsView(AboutView):
+    def get(self, request):
+        contacts = Contact.objects.all()
+        serializer = ContactSerializer(contacts, many=True)
+        return Response(data=serializer.data)

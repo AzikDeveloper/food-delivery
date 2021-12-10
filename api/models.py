@@ -20,9 +20,12 @@ class Product(models.Model):
         return self.name
 
 
-class Location(models.Model):
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+class Address(models.Model):
+    home_number = models.PositiveIntegerField(null=True, blank=True)
+    street = models.CharField(max_length=100, null=True, blank=True)
+    district = models.CharField(max_length=100, null=True, blank=True)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    long = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
 
 class SubOrder(models.Model):
@@ -32,7 +35,7 @@ class SubOrder(models.Model):
 
 class Order(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    address = models.ForeignKey(Address, on_delete=models.CASCADE, null=True)
     suborders = models.ManyToManyField(SubOrder)
     accepted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
@@ -51,11 +54,27 @@ class Banner(models.Model):
 
 class Filial(models.Model):
     name = models.CharField(max_length=200, null=True)
-    address = models.CharField(max_length=200, null=True)
     open_times = models.CharField(max_length=200, null=True)
     phone_number = models.CharField(max_length=20, null=True)
     orienter = models.CharField(max_length=200, null=True)
-    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, related_name='filials', null=True)
 
     def __str__(self):
         return self.name
+
+
+class About(models.Model):
+    title = models.CharField(max_length=200, null=True)
+    banner = models.ImageField(upload_to='about', null=True, blank=True)
+    context = models.TextField(max_length=2000, null=True)
+
+    def __str__(self):
+        return f'about: {self.title}'
+
+
+class Contact(models.Model):
+    title = models.CharField(max_length=50, null=True)
+    address = models.CharField(max_length=50, null=True)
+
+    def __str__(self):
+        return self.title
