@@ -248,10 +248,11 @@ class RegisterView(APIView):
 class RegisterConfirmView(APIView):
     def post(self, request):
         code = request.data.get('code')
+        phone_number = request.data.get('phone_number')
 
-        sms_code = SMSCode.objects.filter(code=code)
+        sms_code = SMSCode.objects.filter(code=code, phone_number=phone_number)
         if sms_code:
-            user = User.objects.filter(username=sms_code[0].phone_number)
+            user = User.objects.filter(username=phone_number)
             if not user:
                 user = User.objects.create_user(
                     username=sms_code[0].phone_number,
