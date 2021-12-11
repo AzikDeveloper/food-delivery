@@ -1,9 +1,16 @@
 from django.urls import path
 from .views import homeView, productsView, productView, ordersView, categoriesView, bannersView, productsByCategoryView, \
-    FilialsView, FilialView, UsersView, UserView, UsersMeView, AboutView, ContactsView
+    FilialsView, FilialView, UsersView, UserView, UsersMeView, AboutView, ContactsView, RegisterView, \
+    RegisterConfirmView, LoginView, LoginConfirmView
 
 urlpatterns = [
     path('test', homeView),
+
+    path('register', RegisterView.as_view()),
+    path('confirm-register', RegisterConfirmView.as_view()),
+    path('login', LoginView.as_view()),
+    path('confirm-login', LoginConfirmView.as_view()),
+
     path('banners', bannersView),
     path('products', productsView),
     path('products/<int:p_id>', productView),

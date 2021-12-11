@@ -1,4 +1,4 @@
-from rest_framework.serializers import ValidationError, ModelSerializer, SerializerMethodField
+from rest_framework.serializers import ValidationError, ModelSerializer, SerializerMethodField, CharField
 from .models import Product, Category, Order, SubOrder, Banner, Filial, Address, About, Contact
 from site_auth.models import User
 from django.core.exceptions import BadRequest
@@ -21,10 +21,12 @@ class ProductSerializer(ModelSerializer):
 
 
 class UserSerializer(ModelSerializer):
+    phone_number = CharField(source='username')
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'address', 'phone_number']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ['id', 'first_name', 'last_name', 'phone_number', 'address', 'username']
+        extra_kwargs = {'username': {'write_only': True}}
 
 
 class SubOrderSerializer(ModelSerializer):

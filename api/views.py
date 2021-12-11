@@ -3,22 +3,25 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework import status
 from .models import Product, Order, Category, Banner, Filial, About, Contact
-from site_auth.models import User
+from site_auth.models import User, SMSCode
 from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer, UserSerializer, \
     FilialSerializer, AboutSerializer, ContactSerializer
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist, FieldError
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from math import ceil
+from .tools import SMS
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def homeView(request):
-    return Response({'ok': True})
+    return Response({'detail': 'congrats'})
 
 
 @api_view(['GET'])
@@ -217,3 +220,97 @@ class ContactsView(AboutView):
         contacts = Contact.objects.all()
         serializer = ContactSerializer(contacts, many=True)
         return Response(data=serializer.data)
+
+
+class RegisterView(APIView):
+    def post(self, request):
+        phone_number = request.data.get('phone_number')
+        user = User.objects.filter(username=phone_number)
+        if not user:
+            sms = SMS(phone_number)
+            while True:
+                sms_code, created = SMSCode.objects.get_or_create(code=sms.code,
+                                                                  defaults={'phone_number': phone_number})
+                if not created:
+                    if sms_code.is_expired():
+                        sms_code.delete()
+                    else:
+                        sms.generate_code()
+                else:
+                    sms.send_sms()
+                    break
+
+            return Response(status=200)
+        else:
+            return Response(status=409)
+
+
+class RegisterConfirmView(APIView):
+    def post(self, request):
+        code = request.data.get('code')
+
+        sms_code = SMSCode.objects.filter(code=code)
+        if sms_code:
+            user = User.objects.filter(username=sms_code[0].phone_number)
+            if not user:
+                user = User.objects.create_user(
+                    username=sms_code[0].phone_number,
+                    first_name=request.data.get('first_name'),
+                    last_name=request.data.get('last_name')
+                )
+                token = Token.objects.create(user=user)
+                serializer = UserSerializer(user)
+                response = serializer.data
+                response['token'] = token.key
+
+                sms_code[0].delete()
+                return Response(data=response)
+            else:
+                return Response(status=400)
+        return Response(status=400)
+
+
+class LoginView(APIView):
+    def post(self, request):
+        phone_number = request.data.get('phone_number')
+        user = User.objects.filter(username=phone_number)
+        if user:
+            sms = SMS(phone_number)
+            while True:
+                sms_code, created = SMSCode.objects.get_or_create(code=sms.code,
+                                                                  defaults={'phone_number': phone_number})
+                if not created:
+                    if sms_code.is_expired():
+                        sms_code.delete()
+                    else:
+                        sms.generate_code()
+                else:
+                    sms.send_sms()
+                    break
+
+            return Response(status=200)
+        else:
+            return Response(status=401)
+
+
+class LoginConfirmView(APIView):
+    def post(self, request):
+        code = request.data.get('code')
+        phone_number = request.data.get('phone_number')
+
+        sms_code = SMSCode.objects.filter(code=code, phone_number=phone_number)
+        if sms_code:
+            if sms_code[0].is_expired():
+                sms_code[0].delete()
+                return Response(status=400)
+            user = User.objects.filter(username=phone_number)
+            if user:
+                token, created = Token.objects.get_or_create(user=user[0])
+                serializer = UserSerializer(user[0])
+                response = serializer.data
+                response['token'] = token.key
+
+                sms_code[0].delete()
+                return Response(data=response)
+            return Response(status=404)
+        return Response(status=400)
