@@ -23,7 +23,7 @@ class ProductSerializer(ModelSerializer):
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'phone_number']
+        fields = ['id', 'username', 'password', 'address', 'phone_number']
         extra_kwargs = {'password': {'write_only': True}}
 
 
