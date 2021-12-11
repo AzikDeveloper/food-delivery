@@ -304,7 +304,7 @@ class LoginConfirmView(APIView):
         if sms_code:
             if sms_code[0].is_expired():
                 sms_code[0].delete()
-                return Response(status=400)
+                return Response(status=410)
             user = User.objects.filter(username=phone_number)
             if user:
                 token, created = Token.objects.get_or_create(user=user[0])
