@@ -167,7 +167,7 @@ class UsersView(APIView):
             serializer.save()
             return Response(data=serializer.data)
         else:
-            return Response(data=serializer.data)
+            return Response(status=400)
 
 
 class UserView(APIView):
@@ -200,6 +200,9 @@ class UsersMeView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+    def put(self, request):
+        pass
 
 
 class AboutView(APIView):

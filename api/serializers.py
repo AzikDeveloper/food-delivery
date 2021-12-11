@@ -1,8 +1,9 @@
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import ValidationError, ModelSerializer, SerializerMethodField
 from .models import Product, Category, Order, SubOrder, Banner, Filial, Address, About, Contact
 from site_auth.models import User
 from django.core.exceptions import BadRequest
 from django.contrib.auth import password_validation
+from rest_framework.response import Response
 
 
 class CategorySerializer(ModelSerializer):
@@ -24,10 +25,6 @@ class UserSerializer(ModelSerializer):
         model = User
         fields = ['id', 'username', 'password', 'phone_number']
         extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
 
 
 class SubOrderSerializer(ModelSerializer):
