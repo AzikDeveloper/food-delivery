@@ -287,6 +287,7 @@ class LoginView(APIView):
                     else:
                         sms.generate_code()
                 else:
+                    print(sms_code.phone_number, sms_code.code)
                     sms.send_sms()
                     break
 
