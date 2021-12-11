@@ -279,7 +279,8 @@ class LoginView(APIView):
             sms = SMS(phone_number)
             while True:
                 sms_code, created = SMSCode.objects.get_or_create(code=sms.code,
-                                                                  defaults={'phone_number': phone_number})
+                                                                  defaults={'phone_number': phone_number,
+                                                                            'code': sms.code})
                 if not created:
                     if sms_code.is_expired():
                         sms_code.delete()
