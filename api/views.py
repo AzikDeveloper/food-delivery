@@ -26,18 +26,18 @@ def homeView(request):
 
 @api_view(['GET'])
 def productsView(request):
-    order_list = []
     products = Product.objects.all()
 
     query = request.GET
 
     if 'sort' in query:
+        order_list = []
         for attr in query['sort'].split(','):
             order_list.append(attr.replace('_', '__'))
-    try:
-        products = products.order_by(*order_list)
-    except FieldError:
-        return Response(data={'detail': 'failed to process &sort= parameter'}, status=400)
+        try:
+            products = products.order_by(*order_list)
+        except FieldError:
+            return Response(data={'detail': 'failed to process &sort= parameter'}, status=400)
 
     serializer = ProductSerializer(products, many=True)
 
