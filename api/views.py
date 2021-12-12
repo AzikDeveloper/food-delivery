@@ -5,6 +5,8 @@ from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
+from rest_framework import mixins
+from rest_framework import generics
 from rest_framework import status
 from .models import Product, Order, Category, Banner, Filial, About, Contact
 from site_auth.models import User, SMSCode
@@ -24,67 +26,66 @@ def homeView(request):
     return Response({'detail': 'congrats'})
 
 
-@api_view(['GET'])
-def productsView(request):
-    products = Product.objects.all()
+class ProductsView(APIView):
+    def get(self, request):
+        products = Product.objects.all().order_by('id')
+        query = request.GET
+        if 'sort' in query:
+            order_list = []
+            for attr in query['sort'].split(','):
+                order_list.append(attr.replace('_', '__'))
+            try:
+                products = products.order_by(*order_list)
+            except FieldError:
+                return Response(data={'detail': 'failed to process &sort= parameter'}, status=400)
 
-    query = request.GET
-
-    if 'sort' in query:
-        order_list = []
-        for attr in query['sort'].split(','):
-            order_list.append(attr.replace('_', '__'))
-        try:
-            products = products.order_by(*order_list)
-        except FieldError:
-            return Response(data={'detail': 'failed to process &sort= parameter'}, status=400)
-
-    serializer = ProductSerializer(products, many=True)
-
-    return Response(data=serializer.data)
+        serializer = ProductSerializer(products, many=True)
+        return Response(data=serializer.data)
 
 
-@api_view(['GET'])
-def productView(request, p_id):
-    product = Product.objects.get(id=p_id)
-    serializer = ProductSerializer(product)
-
-    return Response(data=serializer.data)
-
-
-@api_view(['GET'])
-def ordersView(request):
-    orders = Order.objects.all()
-    order_serializer = OrderSerializer(orders, many=True)
-    return Response(data=order_serializer.data)
+class ProductDetailView(APIView):
+    def get(self, request, p_id):
+        product = get_object_or_404(Product, id=p_id)
+        serializer = ProductSerializer(product)
+        return Response(data=serializer.data)
 
 
-@api_view(['GET'])
-def categoriesView(request):
-    categories = Category.objects.all()
-    category_serializer = CategorySerializer(categories, many=True)
-    return Response(data=category_serializer.data)
+class OrdersView(APIView):
+    def get(self, request):
+        orders = Order.objects.all()
+        serializer = OrderSerializer(orders, many=True)
+        return Response(data=serializer.data)
 
 
-@api_view(['GET'])
-def bannersView(request):
-    banners = Banner.objects.all()
-    banner_serializer = BannerSerializer(banners, many=True)
-    return Response(data=banner_serializer.data)
+class MyOrdersView(mixins.ListModelMixin, generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+
+    def get(self, request):
+        orders = request.user.orders.all()
+        serializer = OrderSerializer(orders, many=True)
+        return Response(data=serializer.data)
 
 
-@api_view(['GET'])
-def productsByCategoryView(request, cat_id):
-    try:
-        category = Category.objects.get(id=cat_id)
-    except ObjectDoesNotExist:
-        return Response(data={
-            'ok': False,
-            'detail': 'category not found'
-        }, status=404)
-    products_in_category = category.products.all()
-    product_serializer = ProductSerializer(products_in_category, many=True)
-    return Response(data=product_serializer.data)
+class CategoriesView(APIView):
+    def get(self, request):
+        categories = Category.objects.all()
+        category_serializer = CategorySerializer(categories, many=True)
+        return Response(data=category_serializer.data)
+
+
+class BannersView(APIView):
+    def get(self, request):
+        banners = Banner.objects.all()
+        banner_serializer = BannerSerializer(banners, many=True)
+        return Response(data=banner_serializer.data)
+
+
+class ProductsByCategoryView(APIView):
+    def get(self, request, cat_id):
+        category = get_object_or_404(Category, id=cat_id)
+        products_in_category = category.products.all()
+        serializer = ProductSerializer(products_in_category, many=True)
+        return Response(data=serializer.data)
 
 
 class FilialsView(APIView):
@@ -110,7 +111,7 @@ class FilialsView(APIView):
         })
 
 
-class FilialView(APIView):
+class FilialDetailView(APIView):
     def get(self, request, filial_id):
         filial = get_object_or_404(Filial, id=filial_id)
         serializer = FilialSerializer(filial)
@@ -127,6 +128,11 @@ class FilialView(APIView):
                 'detail': 'Failed to update the filial!'
             }, status=400)
 
+    def delete(self, request, filial_id):
+        filial = get_object_or_404(Filial, id=filial_id)
+        filial.delete()
+        return Response(status=200)
+
 
 class UsersView(APIView):
     def get(self, request):
@@ -134,32 +140,12 @@ class UsersView(APIView):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data=serializer.data)
-        else:
-            return Response(status=400)
-
 
 class UserView(APIView):
     def get(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
         serializer = UserSerializer(user)
         return Response(serializer.data)
-
-    def put(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        serializer = UserSerializer(instance=user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            print(serializer.errors)
-            return Response(data={
-                'detail': 'Failed to update user'
-            }, status=400)
 
     def delete(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
@@ -173,9 +159,6 @@ class UsersMeView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-
-    def put(self, request):
-        pass
 
 
 class AboutView(APIView):

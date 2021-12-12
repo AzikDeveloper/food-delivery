@@ -20,8 +20,15 @@ class ProductSerializer(ModelSerializer):
         fields = ['id', 'name', 'photo', 'description', 'price', 'category']
 
 
+class AddressSerializer(ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'home_number', 'street', 'district', 'lat', 'long']
+
+
 class UserSerializer(ModelSerializer):
     phone_number = CharField(source='username')
+    address = AddressSerializer()
 
     class Meta:
         model = User
@@ -40,22 +47,24 @@ class SubOrderSerializer(ModelSerializer):
 class OrderSerializer(ModelSerializer):
     receiver = UserSerializer()
     suborders = SubOrderSerializer(many=True)
+    address = SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'receiver', 'address', 'suborders', 'accepted', 'date_created']
+
+    def get_address(self, order):
+        if order.address:
+            address = AddressSerializer(order.address)
+        else:
+            address = AddressSerializer(order.receiver.address)
+        return address.data
 
 
 class BannerSerializer(ModelSerializer):
     class Meta:
         model = Banner
         fields = ['id', 'name', 'photo']
-
-
-class AddressSerializer(ModelSerializer):
-    class Meta:
-        model = Address
-        fields = ['home_number', 'street', 'district', 'lat', 'long']
 
 
 class FilialSerializer(ModelSerializer):

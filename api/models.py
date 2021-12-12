@@ -34,8 +34,8 @@ class SubOrder(models.Model):
 
 
 class Order(models.Model):
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    address = models.ForeignKey(Address, on_delete=models.CASCADE, null=True)
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='orders')
+    address = models.ForeignKey(Address, on_delete=models.CASCADE, null=True, blank=True)
     suborders = models.ManyToManyField(SubOrder)
     accepted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
