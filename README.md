@@ -1,3 +1,3 @@
 # food-delivery
 Restfull api for food delivery app.
-A clone of maxway.uz 
+A clone of https://maxway.uz 
