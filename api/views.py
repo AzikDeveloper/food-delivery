@@ -98,7 +98,7 @@ class UserDetailView(generics.UpdateAPIView):
             return self.update(request, *args, **kwargs)
 
 
-class UserMeView(generics.RetrieveAPIView):
+class UserMeView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 

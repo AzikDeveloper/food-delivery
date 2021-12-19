@@ -34,6 +34,19 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'phone_number', 'address', 'username']
         extra_kwargs = {'username': {'write_only': True}}
 
+    def update(self, instance, validated_data):
+        address = validated_data.pop('address')
+        address_serializer = AddressSerializer(data=address)
+        if address_serializer.is_valid():
+            address = address_serializer.save()
+            if instance.address:
+                instance.address.delete()
+            instance.address = address
+            instance.save()
+            return instance
+        else:
+            raise ValidationError({'address': 'address is not valid'})
+
 
 class SubOrderSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
