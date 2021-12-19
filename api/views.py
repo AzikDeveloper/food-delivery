@@ -10,7 +10,13 @@ from rest_framework import generics
 from rest_framework import status
 from .models import Product, Order, Category, Banner, Filial, About, Contact
 from site_auth.models import User, SMSCode
-from .serializers import ProductSerializer, OrderSerializer, CategorySerializer, BannerSerializer, UserSerializer, \
+from site_auth.permissions import IsAdmin, IsAdminOrCreateOnly
+from .serializers import ProductSerializer, OrderSerializer, CreateOrderSerializer, AddressSerializer, \
+    SubOrderSerializer, \
+    CreateSubOrderSerializer, MyOrderSerializer, \
+    CategorySerializer, \
+    BannerSerializer, \
+    UserSerializer, \
     FilialSerializer, AboutSerializer, ContactSerializer
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist, FieldError
@@ -18,6 +24,7 @@ from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from math import ceil
 from .tools import SMS
+from rest_framework import generics
 
 
 @api_view(['GET'])
@@ -26,51 +33,40 @@ def homeView(request):
     return Response({'detail': 'congrats'})
 
 
-class ProductsView(APIView):
-    def get(self, request):
-        products = Product.objects.all().order_by('id')
-        query = request.GET
-        if 'sort' in query:
-            order_list = []
-            for attr in query['sort'].split(','):
-                order_list.append(attr.replace('_', '__'))
-            try:
-                products = products.order_by(*order_list)
-            except FieldError:
-                return Response(data={'detail': 'failed to process &sort= parameter'}, status=400)
-
-        serializer = ProductSerializer(products, many=True)
-        return Response(data=serializer.data)
+class ProductView(generics.ListCreateAPIView):
+    # permission_classes = [IsAuthenticated]
+    serializer_class = ProductSerializer
+    queryset = Product.objects.all()
 
 
-class ProductDetailView(APIView):
-    def get(self, request, p_id):
-        product = get_object_or_404(Product, id=p_id)
-        serializer = ProductSerializer(product)
-        return Response(data=serializer.data)
+class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Product
+    serializer_class = ProductSerializer
 
 
-class OrdersView(APIView):
-    def get(self, request):
-        orders = Order.objects.all()
-        serializer = OrderSerializer(orders, many=True)
-        return Response(data=serializer.data)
+class OrderView(generics.ListCreateAPIView):
+    authentication_classes = [IsAuthenticated]
+    queryset = Order
+    serializer_class = OrderSerializer
+
+    def post(self, request, *args, **kwargs):
+        request.data['receiver'] = request.user
+        return self.create(request, *args, **kwargs)
 
 
-class MyOrdersView(mixins.ListModelMixin, generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
+class MyOrdersView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
 
-    def get(self, request):
-        orders = request.user.orders.all()
-        serializer = OrderSerializer(orders, many=True)
-        return Response(data=serializer.data)
+    def get_queryset(self):
+        queryset = self.queryset.filter(receiver=self.request.user)
+        return queryset
 
 
-class CategoriesView(APIView):
-    def get(self, request):
-        categories = Category.objects.all()
-        category_serializer = CategorySerializer(categories, many=True)
-        return Response(data=category_serializer.data)
+class CategoryView(generics.ListCreateAPIView):
+    queryset = Category
+    serializer_class = CategorySerializer
 
 
 class BannersView(APIView):

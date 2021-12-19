@@ -41,7 +41,13 @@ class SubOrderSerializer(ModelSerializer):
 
     class Meta:
         model = SubOrder
-        fields = ['product', 'quantity']
+        fields = ['id', 'product', 'quantity']
+
+
+class CreateSubOrderSerializer(ModelSerializer):
+    class Meta:
+        model = SubOrder
+        fields = ['id', 'product', 'quantity']
 
 
 class OrderSerializer(ModelSerializer):
@@ -52,6 +58,52 @@ class OrderSerializer(ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'receiver', 'address', 'suborders', 'accepted', 'date_created']
+
+    def get_address(self, order):
+        if order.address:
+            address = AddressSerializer(order.address)
+        else:
+            address = AddressSerializer(order.receiver.address)
+        return address.data
+
+
+class CreateAddressSerializer(ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'home_number', 'street', 'district', 'lat', 'long']
+
+
+class CreateOrderSerializer(ModelSerializer):
+    address = CreateAddressSerializer()
+    suborders = CreateSubOrderSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ['id', 'receiver', 'address', 'suborders', 'accepted', 'date_created']
+
+    def create(self, validated_data):
+        address = Address.objects.create(**validated_data.pop('address'))
+        suborder_serializer = CreateSubOrderSerializer(data=self.initial_data.get('suborders'), many=True)
+        if suborder_serializer.is_valid():
+            suborders = suborder_serializer.save()
+        else:
+            raise BadRequest
+        order = Order.objects.create(
+            receiver=validated_data.pop('receiver'),
+            address=address
+        )
+        order.suborders.set(suborders)
+        order.save()
+        return order
+
+
+class MyOrderSerializer(ModelSerializer):
+    suborders = SubOrderSerializer(many=True)
+    address = SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ['id', 'address', 'suborders', 'accepted', 'date_created']
 
     def get_address(self, order):
         if order.address:
