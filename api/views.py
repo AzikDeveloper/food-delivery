@@ -1,179 +1,140 @@
-from rest_framework.decorators import api_view
-from rest_framework.authentication import TokenAuthentication
+from copy import copy
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from rest_framework import mixins
-from rest_framework import generics
-from rest_framework import status
-from .models import Product, Order, Category, Banner, Filial, About, Contact
-from site_auth.models import User, SMSCode
-from site_auth.permissions import IsAdmin, IsAdminOrCreateOnly
-from .serializers import ProductSerializer, OrderSerializer, CreateOrderSerializer, AddressSerializer, \
-    SubOrderSerializer, \
-    CreateSubOrderSerializer, MyOrderSerializer, \
-    CategorySerializer, \
-    BannerSerializer, \
-    UserSerializer, \
-    FilialSerializer, AboutSerializer, ContactSerializer
-from django.core.paginator import Paginator
-from django.core.exceptions import ObjectDoesNotExist, FieldError
-from django.db import IntegrityError
-from django.shortcuts import get_object_or_404
-from math import ceil
+from site_auth.models import SMSCode
+from site_auth.permissions import IsAdminUser, IsAdminOrCreateOnly, IsAdminOrGetOnly
+from .serializers import *
+from .models import *
 from .tools import SMS
 from rest_framework import generics
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def homeView(request):
-    return Response({'detail': 'congrats'})
-
-
 class ProductView(generics.ListCreateAPIView):
-    # permission_classes = [IsAuthenticated]
     serializer_class = ProductSerializer
     queryset = Product.objects.all()
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
 
 class OrderView(generics.ListCreateAPIView):
-    authentication_classes = [IsAuthenticated]
-    queryset = Order
-    serializer_class = OrderSerializer
-
-    def post(self, request, *args, **kwargs):
-        request.data['receiver'] = request.user
-        return self.create(request, *args, **kwargs)
-
-
-class MyOrdersView(generics.RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrCreateOnly]
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
+    def post(self, request, *args, **kwargs):
+        request.data['receiver_id'] = request.user.id
+        return self.create(request, *args, **kwargs)
+
+
+class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+
+class MyOrdersView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderSerializer
+
     def get_queryset(self):
-        queryset = self.queryset.filter(receiver=self.request.user)
+        queryset = Order.objects.filter(receiver=self.request.user)
         return queryset
 
 
 class CategoryView(generics.ListCreateAPIView):
-    queryset = Category
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-class BannersView(APIView):
-    def get(self, request):
-        banners = Banner.objects.all()
-        banner_serializer = BannerSerializer(banners, many=True)
-        return Response(data=banner_serializer.data)
+class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
 
 
-class ProductsByCategoryView(APIView):
-    def get(self, request, cat_id):
-        category = get_object_or_404(Category, id=cat_id)
-        products_in_category = category.products.all()
-        serializer = ProductSerializer(products_in_category, many=True)
-        return Response(data=serializer.data)
+class BannerView(generics.ListCreateAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Banner.objects.all()
+    serializer_class = BannerSerializer
 
 
-class FilialsView(APIView):
-    def get(self, request):
-        filials = Filial.objects.all()
-        serializer = FilialSerializer(filials, many=True)
-        return Response(data=serializer.data)
-
-    def post(self, request):
-        serializer = FilialSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data=serializer.data)
-        else:
-            return Response(data={
-                'detail': 'Failed to create filial'
-            }, status=400)
-
-    def delete(self, request):
-        Filial.objects.all().delete()
-        return Response(data={
-            'detail': 'Filials are deleted'
-        })
+class BannerDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Banner
+    serializer_class = BannerSerializer
 
 
-class FilialDetailView(APIView):
-    def get(self, request, filial_id):
-        filial = get_object_or_404(Filial, id=filial_id)
-        serializer = FilialSerializer(filial)
-        return Response(serializer.data)
-
-    def put(self, request, filial_id):
-        filial = get_object_or_404(Filial, id=filial_id)
-        serializer = FilialSerializer(instance=filial, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data=serializer.data)
-        else:
-            return Response(data={
-                'detail': 'Failed to update the filial!'
-            }, status=400)
-
-    def delete(self, request, filial_id):
-        filial = get_object_or_404(Filial, id=filial_id)
-        filial.delete()
-        return Response(status=200)
+class FilialView(generics.ListCreateAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Filial.objects.all()
+    serializer_class = FilialSerializer
 
 
-class UsersView(APIView):
-    def get(self, request):
-        users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+class FilialDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Filial.objects.all()
+    serializer_class = FilialSerializer
 
 
-class UserView(APIView):
-    def get(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-
-    def delete(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        user.delete()
-        return Response()
+class UserView(generics.ListAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 
-class UsersMeView(APIView):
-    authentication_classes = [TokenAuthentication]
+class UserDetailView(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
-
-
-class AboutView(APIView):
-    def get(self, request):
-        about = About.objects.first()
-        serializer = AboutSerializer(about)
-        return Response(data=serializer.data)
+    def patch(self, request, *args, **kwargs):
+        if self.get_object() == request.user:
+            return self.update(request, *args, **kwargs)
 
 
-class ContactsView(AboutView):
-    def get(self, request):
-        contacts = Contact.objects.all()
-        serializer = ContactSerializer(contacts, many=True)
-        return Response(data=serializer.data)
+class UserMeView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class AboutView(generics.ListCreateAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = About.objects.all()
+    serializer_class = AboutSerializer
+
+
+class AboutDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = About.objects.all()
+    serializer_class = AboutSerializer
+
+
+class ContactView(generics.ListCreateAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Contact.objects.all()
+    serializer_class = ContactSerializer
+
+
+class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminOrGetOnly]
+    queryset = Contact
+    serializer_class = ContactSerializer
 
 
 class RegisterView(APIView):
-    def post(self, request):
+
+    def post(self, request, *args, **kwargs):
         phone_number = request.data.get('phone_number')
+        print(phone_number)
         user = User.objects.filter(username=phone_number)
         if not user:
             sms = SMS(phone_number)
@@ -195,6 +156,7 @@ class RegisterView(APIView):
 
 
 class RegisterConfirmView(APIView):
+
     def post(self, request):
         code = request.data.get('code')
         phone_number = request.data.get('phone_number')
@@ -224,6 +186,7 @@ class RegisterConfirmView(APIView):
 
 
 class LoginView(APIView):
+
     def post(self, request):
         phone_number = request.data.get('phone_number')
         user = User.objects.filter(username=phone_number)
@@ -249,6 +212,7 @@ class LoginView(APIView):
 
 
 class LoginConfirmView(APIView):
+
     def post(self, request):
         code = request.data.get('code')
         phone_number = request.data.get('phone_number')

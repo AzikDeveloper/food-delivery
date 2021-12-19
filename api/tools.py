@@ -1,9 +1,8 @@
 from twilio.rest import Client
 from random import randint
-from time import sleep
 
 account_sid = "ACa1ea63f1a96512f69d5b667950f3a692"
-auth_token = "fa4c0b6bf09992c2aa39208f7e54341d"
+auth_token = "e34b0e652bee60228895a121d0aad9cd"
 from_phone_number = "+12182923493"
 
 
