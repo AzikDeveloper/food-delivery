@@ -1,12 +1,6 @@
 from twilio.rest import Client
 from random import randint
 
-account_sid = "ACa1ea63f1a96512f69d5b667950f3a692"
-auth_token = "e34b0e652bee60228895a121d0aad9cd"
-from_phone_number = "+12182923493"
-
-send_sms = False
-
 
 class SMS:
     def __init__(self, to_phone_number):
